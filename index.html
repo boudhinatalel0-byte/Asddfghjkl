@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>iPhone Ultra Enhancer V2</title>
+
+<style>
+*{
+    box-sizing:border-box;
+}
+
+body{
+    margin:0;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+    background:linear-gradient(135deg,#0f2027,#203a43,#2c5364);
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    min-height:100vh;
+    color:white;
+}
+
+.container{
+    width:95%;
+    max-width:700px;
+    background:rgba(255,255,255,0.08);
+    backdrop-filter:blur(30px);
+    border-radius:30px;
+    padding:25px;
+    box-shadow:0 30px 80px rgba(0,0,0,0.6);
+}
+
+h1{
+    text-align:center;
+    margin-bottom:10px;
+    font-weight:600;
+}
+
+.subtitle{
+    text-align:center;
+    font-size:14px;
+    opacity:0.8;
+    margin-bottom:20px;
+}
+
+input[type="file"]{
+    width:100%;
+    margin-bottom:15px;
+}
+
+.controls{
+    margin-top:20px;
+}
+
+.control{
+    margin-bottom:15px;
+}
+
+label{
+    font-size:14px;
+    display:block;
+    margin-bottom:5px;
+}
+
+input[type="range"]{
+    width:100%;
+}
+
+.buttons{
+    display:flex;
+    flex-wrap:wrap;
+    gap:10px;
+    justify-content:center;
+    margin-top:15px;
+}
+
+button{
+    padding:10px 18px;
+    border:none;
+    border-radius:15px;
+    background:linear-gradient(90deg,#007aff,#00c6ff);
+    color:white;
+    font-weight:bold;
+    cursor:pointer;
+    transition:0.3s;
+}
+
+button:hover{
+    transform:scale(1.05);
+}
+
+canvas{
+    width:100%;
+    margin-top:20px;
+    border-radius:20px;
+}
+
+.footer{
+    text-align:center;
+    font-size:12px;
+    opacity:0.6;
+    margin-top:15px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+    <h1>📸 iPhone Ultra Enhancer</h1>
+    <div class="subtitle">HDR • Portrait • Ultra Sharp • AI Style</div>
+
+    <input type="file" id="upload" accept="image/*">
+
+    <canvas id="canvas"></canvas>
+
+    <div class="controls">
+
+        <div class="control">
+            <label>Brightness</label>
+            <input type="range" id="brightness" min="50" max="150" value="110">
+        </div>
+
+        <div class="control">
+            <label>Contrast</label>
+            <input type="range" id="contrast" min="50" max="150" value="115">
+        </div>
+
+        <div class="control">
+            <label>Saturation</label>
+            <input type="range" id="saturation" min="50" max="150" value="120">
+        </div>
+
+        <div class="control">
+            <label>Warmth</label>
+            <input type="range" id="warmth" min="-50" max="50" value="10">
+        </div>
+
+        <div class="control">
+            <label>Skin Smooth</label>
+            <input type="range" id="smooth" min="0" max="5" value="1">
+        </div>
+
+    </div>
+
+    <div class="buttons">
+        <button onclick="enhance()">تحسين احترافي</button>
+        <button onclick="compare()">مقارنة قبل/بعد</button>
+        <button onclick="resetImage()">إعادة تعيين</button>
+        <button onclick="download()">تحميل HD</button>
+    </div>
+
+    <div class="footer">V2 Professional Web Edition</div>
+</div>
+
+<script>
+let img = new Image();
+let originalData;
+let enhanced = false;
+
+const canvas = document.getElementById("canvas");
+const ctx = canvas.getContext("2d");
+
+document.getElementById("upload").addEventListener("change", function(e){
+    const reader = new FileReader();
+    reader.onload = function(event){
+        img.onload = function(){
+            canvas.width = img.width * 2;
+            canvas.height = img.height * 2;
+            ctx.drawImage(img,0,0,canvas.width,canvas.height);
+            originalData = ctx.getImageData(0,0,canvas.width,canvas.height);
+        }
+        img.src = event.target.result;
+    }
+    reader.readAsDataURL(e.target.files[0]);
+});
+
+function enhance(){
+
+    if(!img.src) return;
+
+    ctx.putImageData(originalData,0,0);
+
+    let brightness = document.getElementById("brightness").value;
+    let contrast = document.getElementById("contrast").value;
+    let saturation = document.getElementById("saturation").value;
+
+    ctx.filter = `
+        brightness(${brightness}%)
+        contrast(${contrast}%)
+        saturate(${saturation}%)
+    `;
+
+    ctx.drawImage(canvas,0,0);
+
+    applyWarmth();
+    applySharp();
+    applySmooth();
+
+    enhanced = true;
+}
+
+function applyWarmth(){
+    let warmth = document.getElementById("warmth").value;
+    let imageData = ctx.getImageData(0,0,canvas.width,canvas.height);
+    let data = imageData.data;
+
+    for(let i=0;i<data.length;i+=4){
+        data[i] += warmth;
+        data[i+2] -= warmth;
+    }
+
+    ctx.putImageData(imageData,0,0);
+}
+
+function applySharp(){
+    let imageData = ctx.getImageData(0,0,canvas.width,canvas.height);
+    let data = imageData.data;
+
+    for(let i=0;i<data.length;i+=4){
+        data[i] = Math.min(255,data[i]*1.05);
+        data[i+1] = Math.min(255,data[i+1]*1.05);
+        data[i+2] = Math.min(255,data[i+2]*1.05);
+    }
+
+    ctx.putImageData(imageData,0,0);
+}
+
+function applySmooth(){
+    let smooth = document.getElementById("smooth").value;
+    ctx.globalAlpha = smooth * 0.05;
+    ctx.filter = "blur(2px)";
+    ctx.drawImage(canvas,0,0);
+    ctx.globalAlpha = 1;
+    ctx.filter = "none";
+}
+
+function compare(){
+    if(!enhanced){
+        enhance();
+        return;
+    }
+    ctx.putImageData(originalData,0,0);
+    enhanced = false;
+}
+
+function resetImage(){
+    if(originalData){
+        ctx.putImageData(originalData,0,0);
+        enhanced = false;
+    }
+}
+
+function download(){
+    const link = document.createElement("a");
+    link.download = "Ultra_iPhone_Image.png";
+    link.href = canvas.toDataURL("image/png",1.0);
+    link.click();
+}
+</script>
+
+</body>
+  </html>
